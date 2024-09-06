@@ -17,17 +17,17 @@ func (api *API) StartREPL() {
 		scanner.Scan()
 		input := scanner.Text()
 		switch input {
-		case "help":
+		case "help", "commands", "-h":
 			api.CommandHelp()
-		case "add":
+		case "add", "new":
 			api.CommandAdd(scanner)
-		case "delete":
+		case "delete", "remove":
 			api.CommandDelete(scanner)
-		case "edit":
+		case "edit", "update", "change":
 			api.CommandEdit(scanner)
-		case "show":
+		case "show", "tasks":
 			api.CommandShow(scanner)
-		case "exit":
+		case "exit", "close", "quit":
 			api.CommandExit(scanner)
 		case "get":
 			api.CommandGetTask(scanner)

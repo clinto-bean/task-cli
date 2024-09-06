@@ -58,3 +58,10 @@ func (api *API) DeleteTask(id int) {
 		log.Printf("Could not delete task %d: %v", id, err.Error())
 	}
 }
+
+func (api *API) EditTask(id int, desc string) {
+	err := api.db.EditTask(id, desc)
+	if err != nil {
+		log.Printf("Could not edit task %d: %v", id, err.Error())
+	}
+}

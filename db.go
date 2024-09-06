@@ -195,3 +195,26 @@ func (db *DB) DeleteTask(id int) error {
 	log.Printf("Task %v successfully deleted\n", id)
 	return nil
 }
+
+func (db *DB) EditTask(id int, desc string) error {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		log.Println("Could not load db")
+		return err
+	}
+	_, ok := dbStruct.Tasks[id]
+	if !ok {
+		log.Println("task not found")
+		return errors.New("task not found")
+	}
+	t := Task{Description: desc}
+	dbStruct.Tasks[id] = t
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	err = db.writeDB(dbStruct)
+	if err != nil {
+		return err
+	}
+	log.Printf("task %v successfully updated", id)
+	return nil
+}

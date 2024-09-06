@@ -48,7 +48,19 @@ func (api *API) CommandDelete(scanner *bufio.Scanner) {
 	api.DeleteTask(taskID)
 }
 
-func (api *API) CommandEdit(scanner *bufio.Scanner) {}
+func (api *API) CommandEdit(scanner *bufio.Scanner) {
+	log.Println("Please enter the ID of the task you wish to edit")
+	scanner.Scan()
+	input := scanner.Text()
+	id, err := strconv.Atoi(input)
+	if err != nil {
+		slog.Error("Please enter a numeric ID")
+	}
+	fmt.Printf("Please enter the new description of the task...\n> ")
+	scanner.Scan()
+	desc := scanner.Text()
+	api.EditTask(id, desc)
+}
 
 func (api *API) CommandExit(scanner *bufio.Scanner) {
 	log.Println("Application closing. Goodbye!")
@@ -73,7 +85,7 @@ func (api *API) CommandGetTask(scanner *bufio.Scanner) {
 }
 
 func (api *API) CommandCompleteTask(scanner *bufio.Scanner) {
-	fmt.Printf("Please enter the ID of the task you are completing...\n>")
+	fmt.Printf("Please enter the ID of the task you are completing...\n> ")
 	scanner.Scan()
 	input := scanner.Text()
 	id, err := strconv.Atoi(input)
