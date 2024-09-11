@@ -74,13 +74,36 @@ func (api *API) EditTask(id int, desc string) {
 }
 
 func (api *API) ShowCompletedTasks() {
-	data, err := api.db.GetCompletedTasks()
+	tasks, err := api.db.GetCompletedTasks()
 	if err != nil {
 		api.HandleError(err)
 		return
 	}
-	for _, task := range data {
+	if len(tasks) == 0 {
+		api.log.Info("No tasks are complete yet!")
+		return
+	}
+	for _, task := range tasks {
 		api.log.Printf("\033[33m%d\033[0m (complete): %s\n", task.ID, task.Description)
+	}
+}
+
+func (api *API) ShowIncompleteTasks() {
+	tasks, err := api.db.GetIncompleteTasks()
+	if err != nil {
+		api.HandleError(err)
+		return
+	}
+	if len(tasks) == 0 {
+		api.log.Info("No incomplete tasks were found. Good job!")
+		return
+	}
+	for _, task := range tasks {
+		message := fmt.Sprintf("\033[33m%d\033[0m %s\n", task.ID, task.Description)
+		if task.Complete {
+			message = fmt.Sprintf("\033[33m%d\033[0m %s \033[32m[Complete]\033[0m\n", task.ID, task.Description)
+		}
+		api.log.Printf(message)
 	}
 }
 

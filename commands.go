@@ -13,7 +13,7 @@ func (api *API) CommandHelp() {
 		"edit":     "edit an existing task. format: \"edit {id} {description}\"",
 		"complete": "complete an existing task. format: \"complete {id}\"",
 		"undo":     "marks a task as incomplete. format: \"undo {id}\"",
-		"show":     "shows all tasks, or \"show {id}\" for a specific task",
+		"show":     "shows all tasks, \"show complete\" to display complete, \"show incomplete\" to show incomplete, or \"show {id}\" for a specific task",
 		"delete":   "deletes a specific task. format: \"delete {id}\"",
 		"exit":     "closes the program by calling os.Exit(0)",
 	}
@@ -60,4 +60,8 @@ func (api *API) CommandShowComplete() {
 
 func (api *API) CommandUndo(id int) {
 	api.UndoTask(id)
+}
+
+func (api *API) CommandShowIncomplete() {
+	api.ShowIncompleteTasks()
 }

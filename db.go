@@ -220,6 +220,20 @@ func (db *DB) GetCompletedTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+func (db *DB) GetIncompleteTasks() ([]Task, error) {
+	var tasks []Task
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return []Task{}, err
+	}
+	for i := range dbStruct.Tasks {
+		if dbStruct.Tasks[i].Complete == false {
+			tasks = append(tasks, dbStruct.Tasks[i])
+		}
+	}
+	return tasks, nil
+}
+
 func (db *DB) IncompleteTask(id int) error {
 	dbStruct, err := db.loadDB()
 	if err != nil {
