@@ -63,6 +63,10 @@ func (api *API) StartREPL() error {
 					api.CommandShowAll()
 					continue
 				}
+				if args[1] == "incomplete" {
+					api.CommandShowIncomplete()
+					continue
+				}
 				id, err := strconv.Atoi(args[1])
 				if err != nil {
 					api.HandleError(NaN)
