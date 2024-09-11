@@ -4,20 +4,20 @@ This is a CLI written in Go used for managing to-dos. This was created as practi
 
 ## Usage
 
-`add` - Prompts user for a description of a task, then adds it to the database
+`add` - Typing "Add {description}" will add a task to the database
 
-`show` - Shows all tasks in the database in the format of `ID: Description`
+`show` - Typing "Show all" will display all tasks, "Show complete" will show all complete tasks, "Show incomplete" will show all incomplete tasks, and "Show {id}" will show a specific task
 
-`get` - Prompts user for task ID and fetches the specified task
+`delete` - Typing "delete {id}" will delete the task from the db, if it exists
 
-`delete` - Prompts user for ID of a task, then removes it from the database
+`complete` - Typing "complete {id}" marks task as complete but does not remove it
 
-`complete` - Prompts user for ID of a task, then marks it as complete but does not remove it
+`undo` - Typing "undo {id}" marks a task as incomplete
 
 `exit` - Closes the application, calling os.Exit(0) and ensuring graceful shutdown
 
 `help` - Displays available commands
 
-`edit` - Prompts user for ID of a task, then allows them to edit the description of it
+`edit` - Typing "edit {id}" allows user to edit the description
 
 License: MIT
