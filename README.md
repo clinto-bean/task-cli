@@ -19,5 +19,3 @@ This is a CLI written in Go used for managing to-dos. This was created as practi
 `help` - Displays available commands
 
 `edit` - Typing "edit {id}" allows user to edit the description
-
-[License](license)
