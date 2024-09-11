@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"log"
-	"log/slog"
 	"os"
 	"sync"
 )
@@ -12,26 +10,28 @@ import (
 type DB struct {
 	path string
 	mu   *sync.RWMutex
+	log  *Slogger
 }
 
 type DBStruct struct {
-	Tasks map[int]Task `json:"tasks"`
+	Tasks []Task `json:"tasks"`
 }
 
 func NewDB(path string) (*DB, error) {
-	slog.Info("Initializing DB connection...")
+	log := &Slogger{}
 	db := &DB{
 		path: path,
 		mu:   &sync.RWMutex{},
+		log:  log,
 	}
 	err := db.ensureDB()
 	return db, err
 }
 
 func (db *DB) createDB() error {
-	slog.Info("Creating DB...")
+	db.log.Info("Creating DB.")
 	dbStructure := DBStruct{
-		Tasks: map[int]Task{},
+		Tasks: []Task{},
 	}
 
 	db.mu.RLock()
@@ -42,30 +42,32 @@ func (db *DB) createDB() error {
 }
 
 func (db *DB) ensureDB() error {
-	_, err := os.ReadFile(db.path)
+	data, err := os.ReadFile(db.path)
 	if errors.Is(err, os.ErrNotExist) {
-		slog.Warn("JSON database not found, initializing")
+		db.log.Warn("JSON database not found, initializing.")
 		return db.createDB()
+	}
+	if len(data) == 0 {
+		os.WriteFile(db.path, []byte("{}"), 0666)
 	}
 	return err
 }
 
 func (db *DB) loadDB() (DBStruct, error) {
 	dbStructure := DBStruct{}
-
 	db.mu.RLock()
 	dat, err := os.ReadFile(db.path)
 	db.mu.RUnlock()
 
 	if errors.Is(err, os.ErrNotExist) {
-		log.Printf("Could not read file: %v", db.path)
+		db.log.Printf("Could not read file: %v\n", db.path)
 		return dbStructure, err
 	}
 
 	err = json.Unmarshal(dat, &dbStructure)
 
 	if err != nil {
-		log.Printf("Could not unmarshal data: %v", dat)
+		db.log.Printf("Could not unmarshal data: %v\n", dat)
 		return dbStructure, err
 	}
 
@@ -73,148 +75,177 @@ func (db *DB) loadDB() (DBStruct, error) {
 }
 
 func (db *DB) writeDB(dbStructure DBStruct) error {
-	slog.Info("Attempting to write to DB...")
 
 	dat, err := json.Marshal(dbStructure)
 	if err != nil {
-		log.Printf("Could not marshal data: %v", dat)
 		return err
 	}
 
 	err = os.WriteFile(db.path, dat, 0600)
 	if err != nil {
-		log.Printf("Could not write new data to db: %v", err)
 		return err
 	}
 	return nil
 }
 
-func (db *DB) AddTask(t Task) (Task, error) {
+func (db *DB) AddTask(task Task) (Task, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
+		db.log.Println("Could not load db")
 		return Task{}, err
 	}
 
+	var idx int = 0
+
+	for _, ts := range dbStruct.Tasks {
+		if ts.ID > idx {
+			idx = ts.ID
+		}
+	}
+
 	for i := range dbStruct.Tasks {
-		if dbStruct.Tasks[i].Description == t.Description {
+		if dbStruct.Tasks[i].Description == task.Description {
 			return Task{}, errors.New("task already added")
 		}
 	}
 
-	id := len(dbStruct.Tasks) + 1
+	task.ID = idx + 1
 
-	dbStruct.Tasks[id] = t
+	dbStruct.Tasks = append(dbStruct.Tasks, task)
 
-	db.mu.RLock()
+	db.mu.Lock()
 	err = db.writeDB(dbStruct)
-	db.mu.RUnlock()
+	db.mu.Unlock()
 
 	if err != nil {
-		log.Println("Failed to write db")
+		db.log.Println("Failed to write db")
 		return Task{}, err
 	}
 
-	return dbStruct.Tasks[id], nil
+	return task, nil
 }
 
-func (db *DB) GetAllTasks() (map[int]string, error) {
+func (db *DB) GetAllTasks() ([]Task, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
+		db.log.Println("Could not load db")
 		return nil, err
 	}
-	returnVals := make(map[int]string)
-	for i := range dbStruct.Tasks {
-		returnVals[i] = dbStruct.Tasks[i].Description
-	}
-	return returnVals, nil
+	return dbStruct.Tasks, nil
 }
 
 func (db *DB) GetTask(id int) (Task, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
 		return Task{}, err
 	}
-	var returnVals Task
-	if dbStruct.Tasks[id].Description != "" {
-		returnVals = dbStruct.Tasks[id]
-		return returnVals, nil
+	i, err := index(dbStruct.Tasks, id)
+	if err != nil {
+		return Task{}, err
 	}
-	return Task{}, errors.New("task not found")
+	return dbStruct.Tasks[i], nil
 }
 
 func (db *DB) CompleteTask(id int) error {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
 		return err
 	}
-	t := dbStruct.Tasks[id]
-	if t.Complete {
-		return errors.New("already complete")
-	}
-
-	t.Complete = true
-	dbStruct.Tasks[id] = t
-
-	db.mu.Lock()
-	err = db.writeDB(dbStruct)
-	defer db.mu.Unlock()
-
+	i, err := index(dbStruct.Tasks, id)
 	if err != nil {
 		return err
 	}
-	if dbStruct.Tasks[id].Complete {
-		log.Printf("Task %v completed", id)
-		return nil
+	if dbStruct.Tasks[i].Complete {
+		return errors.New("already complete")
 	}
-	return errors.New("an error occurred")
-
+	dbStruct.Tasks[i].Complete = true
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if err = db.writeDB(dbStruct); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *DB) DeleteTask(id int) error {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
 		return err
 	}
-	_, ok := dbStruct.Tasks[id]
-	if !ok {
-		log.Println("task not found")
-		return errors.New("task not found")
+	i, err := index(dbStruct.Tasks, id)
+	if err != nil {
+		return err
 	}
-	delete(dbStruct.Tasks, id)
+	dbStruct.Tasks = append(dbStruct.Tasks[:i], dbStruct.Tasks[i+1:]...)
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	err = db.writeDB(dbStruct)
 	if err != nil {
 		return err
 	}
-	log.Printf("Task %v successfully deleted\n", id)
 	return nil
 }
 
 func (db *DB) EditTask(id int, desc string) error {
 	dbStruct, err := db.loadDB()
 	if err != nil {
-		log.Println("Could not load db")
 		return err
 	}
-	_, ok := dbStruct.Tasks[id]
-	if !ok {
-		log.Println("task not found")
-		return errors.New("task not found")
+	i, err := index(dbStruct.Tasks, id)
+	if err != nil {
+		return err
 	}
-	t := Task{Description: desc}
-	dbStruct.Tasks[id] = t
+	dbStruct.Tasks[i].Description = desc
+	dbStruct.Tasks[i].Complete = false
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	err = db.writeDB(dbStruct)
 	if err != nil {
 		return err
 	}
-	log.Printf("task %v successfully updated", id)
 	return nil
+}
+
+func (db *DB) GetCompletedTasks() ([]Task, error) {
+	var tasks []Task
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return []Task{}, err
+	}
+	for i := range dbStruct.Tasks {
+		if dbStruct.Tasks[i].Complete {
+			tasks = append(tasks, dbStruct.Tasks[i])
+		}
+	}
+	return tasks, nil
+}
+
+func (db *DB) IncompleteTask(id int) error {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+	i, err := index(dbStruct.Tasks, id)
+	if err != nil {
+		return err
+	}
+	dbStruct.Tasks[i].Complete = false
+	err = db.save(dbStruct)
+	return err
+}
+
+func index(tasks []Task, id int) (int, error) {
+	for i, t := range tasks {
+		if t.ID == id {
+			return i, nil
+		}
+	}
+	return -1, errors.New("not found")
+}
+
+func (db *DB) save(payload DBStruct) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	err := db.writeDB(payload)
+	return err
 }

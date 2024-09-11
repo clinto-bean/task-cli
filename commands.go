@@ -1,96 +1,63 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"log"
-	"log/slog"
 	"os"
-	"strconv"
+	"os/exec"
 )
 
 func (api *API) CommandHelp() {
-	fmt.Println("A list of commands is found below.")
-	fmt.Println("\tHelp - Show available commands")
-	fmt.Println("\tAdd - create a task")
-	fmt.Println("\tEdit - edit an existing task")
-	fmt.Println("\tShow - shows all tasks")
-	fmt.Println("\tGet - gets a specific task by its ID")
-	fmt.Println("\tComplete - completes a task")
-	fmt.Println("\tDelete - deletes a specific task by its ID")
-	fmt.Println("\tExit - closes the program by calling os.Exit(0)")
+
+	commands := map[string]string{
+		"help":     "show available commands",
+		"add":      "add a task. format: \"add {description}\"",
+		"edit":     "edit an existing task. format: \"edit {id} {description}\"",
+		"complete": "complete an existing task. format: \"complete {id}\"",
+		"undo":     "marks a task as incomplete. format: \"undo {id}\"",
+		"show":     "shows all tasks, or \"show {id}\" for a specific task",
+		"delete":   "deletes a specific task. format: \"delete {id}\"",
+		"exit":     "closes the program by calling os.Exit(0)",
+	}
+
+	for k, v := range commands {
+		api.log.Println("\033[96m" + k + "\033[0m: " + v)
+	}
 }
 
-func (api *API) CommandAdd(scanner *bufio.Scanner) {
-	fmt.Printf("Please enter the description for your task:\n> ")
-	scanner.Scan()
-	description := scanner.Text()
-	err := api.CreateTask(description)
-	if err != nil {
-		panic(err)
-	}
-
+func (api *API) CommandAdd(desc string) {
+	api.CreateTask(desc)
 }
 
-func (api *API) CommandDelete(scanner *bufio.Scanner) {
-	fmt.Printf("Please enter the ID of the task you wish to delete.\nIf you are unsure of the ID, type 'show' to display tasks.\n> ")
-	scanner.Scan()
-	input := scanner.Text()
-	if input == "show" {
-		api.CommandShow(scanner)
-		return
-	}
-	taskID, err := strconv.Atoi(input)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Printf("Deleting task [%v]\n", taskID)
+func (api *API) CommandDelete(taskID int) {
 	api.DeleteTask(taskID)
 }
 
-func (api *API) CommandEdit(scanner *bufio.Scanner) {
-	log.Println("Please enter the ID of the task you wish to edit")
-	scanner.Scan()
-	input := scanner.Text()
-	id, err := strconv.Atoi(input)
-	if err != nil {
-		slog.Error("Please enter a numeric ID")
-	}
-	fmt.Printf("Please enter the new description of the task...\n> ")
-	scanner.Scan()
-	desc := scanner.Text()
+func (api *API) CommandEdit(id int, desc string) {
 	api.EditTask(id, desc)
 }
 
-func (api *API) CommandExit(scanner *bufio.Scanner) {
-	log.Println("Application closing. Goodbye!")
+func (api *API) CommandExit(args ...any) {
+	clear := exec.Command("clear")
+	clear.Stdout = os.Stdout
+	clear.Run()
 	os.Exit(0)
 }
 
-func (api *API) CommandShow(scanner *bufio.Scanner) {
-	fmt.Println("Showing commands")
-	api.GetTasks()
+func (api *API) CommandShowAll() {
+	api.GetAllTasks()
 }
 
-func (api *API) CommandGetTask(scanner *bufio.Scanner) {
-	fmt.Printf("Please enter the ID of the task you are searching for...\n> ")
-	scanner.Scan()
-	input := scanner.Text()
-	id, err := strconv.Atoi(input)
-	if err != nil {
-		slog.Error("Please enter a numeric ID")
-		return
-	}
+func (api *API) CommandGetTask(id int) {
 	api.GetTask(id)
 }
 
-func (api *API) CommandCompleteTask(scanner *bufio.Scanner) {
-	fmt.Printf("Please enter the ID of the task you are completing...\n> ")
-	scanner.Scan()
-	input := scanner.Text()
-	id, err := strconv.Atoi(input)
-	if err != nil {
-		slog.Error("Please enter a numeric ID")
-	}
+func (api *API) CommandComplete(id int) {
 	api.CompleteTask(id)
+}
+
+func (api *API) CommandShowComplete() {
+	api.ShowCompletedTasks()
+}
+
+func (api *API) CommandUndo(id int) {
+	api.UndoTask(id)
 }

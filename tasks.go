@@ -2,66 +2,93 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"log/slog"
 )
 
 type Task struct {
 	Description string `json:"description"`
 	Complete    bool   `json:"complete"`
+	ID          int
 }
 
-func (api *API) CreateTask(desc string) error {
+func (api *API) CreateTask(desc string) {
 	task := Task{
 		Description: desc,
 	}
 	t, err := api.db.AddTask(task)
 	if err != nil {
-		log.Printf("Could not write to DB: %v\n", err.Error())
-		return nil
+		api.HandleError(err)
+		return
 	}
-	log.Printf("Task created: %v\n", t)
-	return nil
+	api.log.Printf("Task created: %v\n", t.ID)
 }
 
-func (api *API) GetTasks() {
-	data, err := api.db.GetAllTasks()
+func (api *API) GetAllTasks() {
+	tasks, err := api.db.GetAllTasks()
 	if err != nil {
-		panic(err)
+		api.HandleError(err)
+		return
 	}
-	slog.Info("Displaying all tasks below!")
-	for k, v := range data {
-		msg := fmt.Sprintf("%v - %s", k, v)
-		fmt.Println(msg)
+	for _, task := range tasks {
+		message := fmt.Sprintf("\033[33m%d\033[0m %s\n", task.ID, task.Description)
+		if task.Complete {
+			message = fmt.Sprintf("\033[33m%d\033[0m %s \033[32m[Complete]\033[0m\n", task.ID, task.Description)
+		}
+		api.log.Printf(message)
 	}
 }
 
 func (api *API) GetTask(id int) {
 	task, err := api.db.GetTask(id)
 	if err != nil {
-		log.Printf("An error occurred while getting task %v: %v\n", id, err.Error())
+		api.HandleError(err)
+		return
 	}
-	slog.Info(fmt.Sprintf("Task %v found.", id))
-	fmt.Printf("Task: %v\n", task.Description)
+	api.log.Info(fmt.Sprintf("Task %v found.", id))
+	api.log.Printf("Task: %v\n", task.Description)
 }
 
 func (api *API) CompleteTask(id int) {
 	err := api.db.CompleteTask(id)
 	if err != nil {
-		log.Printf("An error occurred while marking task %d as complete: %v\n", id, err.Error())
+		api.HandleError(err)
+		return
 	}
+	api.log.Info(fmt.Sprintf("Task %d marked as complete", id))
 }
 
 func (api *API) DeleteTask(id int) {
 	err := api.db.DeleteTask(id)
 	if err != nil {
-		log.Printf("Could not delete task %d: %v", id, err.Error())
+		api.HandleError(err)
+		return
 	}
+	api.log.Info(fmt.Sprintf("Task %d successfully deleted", id))
 }
 
 func (api *API) EditTask(id int, desc string) {
 	err := api.db.EditTask(id, desc)
 	if err != nil {
-		log.Printf("Could not edit task %d: %v", id, err.Error())
+		api.HandleError(err)
 	}
+	api.log.Info(fmt.Sprintf("Task %d description updated: %s", id, desc))
+}
+
+func (api *API) ShowCompletedTasks() {
+	data, err := api.db.GetCompletedTasks()
+	if err != nil {
+		api.HandleError(err)
+		return
+	}
+	for _, task := range data {
+		api.log.Printf("\033[33m%d\033[0m (complete): %s\n", task.ID, task.Description)
+	}
+}
+
+func (api *API) UndoTask(id int) {
+	err := api.db.IncompleteTask(id)
+	if err != nil {
+		api.HandleError(err)
+		return
+	}
+	api.log.Info(fmt.Sprintf("Task %d successfully marked as NOT complete.", id))
 }
