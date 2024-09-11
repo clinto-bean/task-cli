@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"time"
 )
 
 type DB struct {
@@ -90,6 +91,7 @@ func (db *DB) writeDB(dbStructure DBStruct) error {
 
 func (db *DB) AddTask(task Task) (Task, error) {
 	dbStruct, err := db.loadDB()
+	now := time.Now()
 	if err != nil {
 		db.log.Println("Could not load db")
 		return Task{}, err
@@ -110,6 +112,8 @@ func (db *DB) AddTask(task Task) (Task, error) {
 	}
 
 	task.ID = idx + 1
+	task.CreatedAt = now
+	task.UpdatedAt = now
 
 	dbStruct.Tasks = append(dbStruct.Tasks, task)
 
@@ -147,6 +151,7 @@ func (db *DB) GetTask(id int) (Task, error) {
 }
 
 func (db *DB) CompleteTask(id int) error {
+	now := time.Now()
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return err
@@ -159,6 +164,7 @@ func (db *DB) CompleteTask(id int) error {
 		return errors.New("already complete")
 	}
 	dbStruct.Tasks[i].Complete = true
+	dbStruct.Tasks[i].UpdatedAt = now
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if err = db.writeDB(dbStruct); err != nil {
@@ -187,6 +193,7 @@ func (db *DB) DeleteTask(id int) error {
 }
 
 func (db *DB) EditTask(id int, desc string) error {
+	now := time.Now()
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return err
@@ -195,6 +202,7 @@ func (db *DB) EditTask(id int, desc string) error {
 	if err != nil {
 		return err
 	}
+	dbStruct.Tasks[i].UpdatedAt = now
 	dbStruct.Tasks[i].Description = desc
 	dbStruct.Tasks[i].Complete = false
 	db.mu.Lock()
@@ -235,6 +243,7 @@ func (db *DB) GetIncompleteTasks() ([]Task, error) {
 }
 
 func (db *DB) IncompleteTask(id int) error {
+	now := time.Now()
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return err
@@ -243,6 +252,7 @@ func (db *DB) IncompleteTask(id int) error {
 	if err != nil {
 		return err
 	}
+	dbStruct.Tasks[i].UpdatedAt = now
 	dbStruct.Tasks[i].Complete = false
 	err = db.save(dbStruct)
 	return err

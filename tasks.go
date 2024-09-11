@@ -2,17 +2,23 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 type Task struct {
 	Description string `json:"description"`
 	Complete    bool   `json:"complete"`
 	ID          int
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (api *API) CreateTask(desc string) {
+	now := time.Now()
 	task := Task{
 		Description: desc,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	t, err := api.db.AddTask(task)
 	if err != nil {
@@ -20,6 +26,14 @@ func (api *API) CreateTask(desc string) {
 		return
 	}
 	api.log.Printf("Task created: %v\n", t.ID)
+}
+
+func (api *API) EditTask(id int, desc string) {
+	err := api.db.EditTask(id, desc)
+	if err != nil {
+		api.HandleError(err)
+	}
+	api.log.Info(fmt.Sprintf("Task %d description updated: %s", id, desc))
 }
 
 func (api *API) GetAllTasks() {
@@ -63,14 +77,6 @@ func (api *API) DeleteTask(id int) {
 		return
 	}
 	api.log.Info(fmt.Sprintf("Task %d successfully deleted", id))
-}
-
-func (api *API) EditTask(id int, desc string) {
-	err := api.db.EditTask(id, desc)
-	if err != nil {
-		api.HandleError(err)
-	}
-	api.log.Info(fmt.Sprintf("Task %d description updated: %s", id, desc))
 }
 
 func (api *API) ShowCompletedTasks() {
