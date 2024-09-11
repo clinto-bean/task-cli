@@ -7,18 +7,15 @@ import (
 
 type Task struct {
 	Description string `json:"description"`
-	Complete    bool   `json:"complete"`
+	Status      string `json:"status"`
 	ID          int
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (api *API) CreateTask(desc string) {
-	now := time.Now()
 	task := Task{
 		Description: desc,
-		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
 	t, err := api.db.AddTask(task)
 	if err != nil {
@@ -43,10 +40,7 @@ func (api *API) GetAllTasks() {
 		return
 	}
 	for _, task := range tasks {
-		message := fmt.Sprintf("\033[33m%d\033[0m %s\n", task.ID, task.Description)
-		if task.Complete {
-			message = fmt.Sprintf("\033[33m%d\033[0m %s \033[32m[Complete]\033[0m\n", task.ID, task.Description)
-		}
+		message := fmt.Sprintf("\033[33m%d\033[0m %s - [%s]\n", task.ID, task.Description, task.Status)
 		api.log.Printf(message)
 	}
 }
@@ -90,7 +84,10 @@ func (api *API) ShowCompletedTasks() {
 		return
 	}
 	for _, task := range tasks {
-		api.log.Printf("\033[33m%d\033[0m (complete): %s\n", task.ID, task.Description)
+		if task.Status == "Complete" {
+			message := fmt.Sprintf("\033[33m%d\033[0m %s - [%s]\n", task.ID, task.Description, task.Status)
+			api.log.Printf(message)
+		}
 	}
 }
 
@@ -105,9 +102,9 @@ func (api *API) ShowIncompleteTasks() {
 		return
 	}
 	for _, task := range tasks {
-		message := fmt.Sprintf("\033[33m%d\033[0m %s\n", task.ID, task.Description)
-		if task.Complete {
-			message = fmt.Sprintf("\033[33m%d\033[0m %s \033[32m[Complete]\033[0m\n", task.ID, task.Description)
+		message := ""
+		if task.Status != "Complete" {
+			message = fmt.Sprintf("\033[33m%d\033[0m %s - [%s]\n", task.ID, task.Description, task.Status)
 		}
 		api.log.Printf(message)
 	}

@@ -114,6 +114,7 @@ func (db *DB) AddTask(task Task) (Task, error) {
 	task.ID = idx + 1
 	task.CreatedAt = now
 	task.UpdatedAt = now
+	task.Status = "Incomplete"
 
 	dbStruct.Tasks = append(dbStruct.Tasks, task)
 
@@ -160,10 +161,10 @@ func (db *DB) CompleteTask(id int) error {
 	if err != nil {
 		return err
 	}
-	if dbStruct.Tasks[i].Complete {
+	if dbStruct.Tasks[i].Status == "Complete" {
 		return errors.New("already complete")
 	}
-	dbStruct.Tasks[i].Complete = true
+	dbStruct.Tasks[i].Status = "Complete"
 	dbStruct.Tasks[i].UpdatedAt = now
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -204,7 +205,7 @@ func (db *DB) EditTask(id int, desc string) error {
 	}
 	dbStruct.Tasks[i].UpdatedAt = now
 	dbStruct.Tasks[i].Description = desc
-	dbStruct.Tasks[i].Complete = false
+	dbStruct.Tasks[i].Status = "In Progress"
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	err = db.writeDB(dbStruct)
@@ -221,7 +222,7 @@ func (db *DB) GetCompletedTasks() ([]Task, error) {
 		return []Task{}, err
 	}
 	for i := range dbStruct.Tasks {
-		if dbStruct.Tasks[i].Complete {
+		if dbStruct.Tasks[i].Status == "Complete" {
 			tasks = append(tasks, dbStruct.Tasks[i])
 		}
 	}
@@ -235,7 +236,7 @@ func (db *DB) GetIncompleteTasks() ([]Task, error) {
 		return []Task{}, err
 	}
 	for i := range dbStruct.Tasks {
-		if dbStruct.Tasks[i].Complete == false {
+		if dbStruct.Tasks[i].Status != "Complete" {
 			tasks = append(tasks, dbStruct.Tasks[i])
 		}
 	}
@@ -253,7 +254,7 @@ func (db *DB) IncompleteTask(id int) error {
 		return err
 	}
 	dbStruct.Tasks[i].UpdatedAt = now
-	dbStruct.Tasks[i].Complete = false
+	dbStruct.Tasks[i].Status = "Incomplete"
 	err = db.save(dbStruct)
 	return err
 }
