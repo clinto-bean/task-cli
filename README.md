@@ -20,4 +20,4 @@ This is a CLI written in Go used for managing to-dos. This was created as practi
 
 `edit` - Typing "edit {id}" allows user to edit the description
 
-License: MIT
+[License](license)
