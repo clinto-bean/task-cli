@@ -38,7 +38,7 @@ func (db *DB) createDB() error {
 
 	db.mu.RLock()
 	err := db.writeDB(dbStructure)
-	db.mu.RUnlock()
+	defer db.mu.RUnlock()
 
 	return err
 }
@@ -275,11 +275,9 @@ func index(tasks []Task, id int) (int, error) {
 func (db *DB) save(payload DBStruct) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	fmt.Println("saving payload")
 	err := db.writeDB(payload)
 	if err != nil {
 		fmt.Println("uh oh")
 	}
-	fmt.Println("EOF")
 	return err
 }

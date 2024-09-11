@@ -70,3 +70,7 @@ func (api *API) CommandShowIncomplete() {
 func (api *API) CommandStart(id int) {
 	api.StartTask(id)
 }
+
+func (api *API) CommandShowStarted() {
+	api.ShowStartedTasks()
+}

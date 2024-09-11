@@ -67,6 +67,11 @@ func (api *API) StartREPL() error {
 					api.CommandShowIncomplete()
 					continue
 				}
+				if args[1] == "started" {
+					api.CommandShowStarted()
+					api.log.Info("started tasks")
+					continue
+				}
 				id, err := strconv.Atoi(args[1])
 				if err != nil {
 					api.HandleError(NaN)

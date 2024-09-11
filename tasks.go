@@ -22,7 +22,7 @@ func (api *API) CreateTask(desc string) {
 		api.HandleError(err)
 		return
 	}
-	api.log.Printf("Task created: %v\n", t.ID)
+	api.log.Info(fmt.Sprintf("Task created: %v", t.ID))
 }
 
 func (api *API) EditTask(id int, desc string) {
@@ -104,6 +104,25 @@ func (api *API) ShowIncompleteTasks() {
 	for _, task := range tasks {
 		message := ""
 		if task.Status != "Complete" {
+			message = fmt.Sprintf("\033[33m%d\033[0m %s - [%s]\n", task.ID, task.Description, task.Status)
+		}
+		api.log.Printf(message)
+	}
+}
+
+func (api *API) ShowStartedTasks() {
+	tasks, err := api.db.GetIncompleteTasks()
+	if err != nil {
+		api.HandleError(err)
+		return
+	}
+	if len(tasks) == 0 {
+		api.log.Info("No tasks have been started yet!")
+		return
+	}
+	for _, task := range tasks {
+		message := ""
+		if task.Status == "In Progress" {
 			message = fmt.Sprintf("\033[33m%d\033[0m %s - [%s]\n", task.ID, task.Description, task.Status)
 		}
 		api.log.Printf(message)
