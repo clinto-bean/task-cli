@@ -16,6 +16,7 @@ func (api *API) CommandHelp() {
 		"show":     "shows all tasks, \"show complete\" to display complete, \"show incomplete\" to show incomplete, or \"show {id}\" for a specific task",
 		"delete":   "deletes a specific task. format: \"delete {id}\"",
 		"exit":     "closes the program by calling os.Exit(0)",
+		"start":    "marks a task as in progress. format: \"start {id}\"",
 	}
 
 	for k, v := range commands {
@@ -46,7 +47,7 @@ func (api *API) CommandShowAll() {
 	api.GetAllTasks()
 }
 
-func (api *API) CommandGetTask(id int) {
+func (api *API) CommandGet(id int) {
 	api.GetTask(id)
 }
 
@@ -64,4 +65,8 @@ func (api *API) CommandUndo(id int) {
 
 func (api *API) CommandShowIncomplete() {
 	api.ShowIncompleteTasks()
+}
+
+func (api *API) CommandStart(id int) {
+	api.StartTask(id)
 }

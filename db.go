@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -49,7 +50,7 @@ func (db *DB) ensureDB() error {
 		return db.createDB()
 	}
 	if len(data) == 0 {
-		os.WriteFile(db.path, []byte("{}"), 0666)
+		os.WriteFile(db.path, []byte("{}"), 0600)
 	}
 	return err
 }
@@ -118,16 +119,8 @@ func (db *DB) AddTask(task Task) (Task, error) {
 
 	dbStruct.Tasks = append(dbStruct.Tasks, task)
 
-	db.mu.Lock()
-	err = db.writeDB(dbStruct)
-	db.mu.Unlock()
-
-	if err != nil {
-		db.log.Println("Failed to write db")
-		return Task{}, err
-	}
-
-	return task, nil
+	err = db.save(dbStruct)
+	return task, err
 }
 
 func (db *DB) GetAllTasks() ([]Task, error) {
@@ -166,12 +159,30 @@ func (db *DB) CompleteTask(id int) error {
 	}
 	dbStruct.Tasks[i].Status = "Complete"
 	dbStruct.Tasks[i].UpdatedAt = now
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	if err = db.writeDB(dbStruct); err != nil {
+	err = db.save(dbStruct)
+	return err
+}
+
+func (db *DB) StartTask(id int) error {
+	now := time.Now()
+	dbStruct, err := db.loadDB()
+	if err != nil {
 		return err
 	}
-	return nil
+	if dbStruct.Tasks == nil {
+		return errors.New("no tasks")
+	}
+	i, err := index(dbStruct.Tasks, id)
+	if err != nil || i < 0 {
+		return err
+	}
+	if dbStruct.Tasks[i].Status != "Incomplete" {
+		return errors.New("already started or completed")
+	}
+	dbStruct.Tasks[i].Status = "In Progress"
+	dbStruct.Tasks[i].UpdatedAt = now
+	err = db.save(dbStruct)
+	return err
 }
 
 func (db *DB) DeleteTask(id int) error {
@@ -184,13 +195,8 @@ func (db *DB) DeleteTask(id int) error {
 		return err
 	}
 	dbStruct.Tasks = append(dbStruct.Tasks[:i], dbStruct.Tasks[i+1:]...)
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	err = db.writeDB(dbStruct)
-	if err != nil {
-		return err
-	}
-	return nil
+	err = db.save(dbStruct)
+	return err
 }
 
 func (db *DB) EditTask(id int, desc string) error {
@@ -203,16 +209,14 @@ func (db *DB) EditTask(id int, desc string) error {
 	if err != nil {
 		return err
 	}
+	if dbStruct.Tasks[i].Status == "Complete" {
+		return errors.New("already complete")
+	}
 	dbStruct.Tasks[i].UpdatedAt = now
 	dbStruct.Tasks[i].Description = desc
-	dbStruct.Tasks[i].Status = "In Progress"
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	err = db.writeDB(dbStruct)
-	if err != nil {
-		return err
-	}
-	return nil
+	err = db.save(dbStruct)
+	return err
+
 }
 
 func (db *DB) GetCompletedTasks() ([]Task, error) {
@@ -271,6 +275,11 @@ func index(tasks []Task, id int) (int, error) {
 func (db *DB) save(payload DBStruct) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	fmt.Println("saving payload")
 	err := db.writeDB(payload)
+	if err != nil {
+		fmt.Println("uh oh")
+	}
+	fmt.Println("EOF")
 	return err
 }

@@ -118,3 +118,16 @@ func (api *API) UndoTask(id int) {
 	}
 	api.log.Info(fmt.Sprintf("Task %d successfully marked as NOT complete.", id))
 }
+
+func (api *API) StartTask(id int) {
+	err := api.db.StartTask(id)
+	if err.Error() == "already complete" {
+		api.log.Warn(fmt.Sprintf("Task %d already complete.", id))
+		return
+	}
+	if err != nil {
+		api.HandleError(err)
+		return
+	}
+	api.log.Info(fmt.Sprintf("Task %d successfully started.", id))
+}

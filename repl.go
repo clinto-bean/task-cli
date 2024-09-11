@@ -72,13 +72,20 @@ func (api *API) StartREPL() error {
 					api.HandleError(NaN)
 					continue
 				}
-				api.CommandGetTask(id)
+				api.CommandGet(id)
 
 			} else {
 				api.log.Warn("Incorrect format. Please type 'show (\"complete\", \"all\" or \"{taskID\"}). Type 'help' for more information.")
 			}
 		case "exit", "close", "quit":
 			api.CommandExit(nil)
+		case "start":
+			id, err := strconv.Atoi(args[1])
+			if err != nil {
+				api.HandleError(NaN)
+				continue
+			}
+			api.CommandStart(id)
 		case "complete":
 			if len(args) == 1 {
 				api.log.Warn("Incorrect format. Please type 'complete {id}' or 'help' for more information.")
