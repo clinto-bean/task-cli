@@ -4,6 +4,10 @@ This is a CLI written in Go used for managing to-dos. This was created as practi
 
 ## Usage
 
+To use this CLI tool, simply clone the repository and either compile the program using Go build or alternatively run it using go run.
+
+## Commands
+
 `add` - Typing "Add {description}" will add a task to the database
 
 `show` - Typing "Show all" will display all tasks, "Show complete" will show all complete tasks, "Show incomplete" will show all incomplete tasks, and "Show {id}" will show a specific task
@@ -19,3 +23,7 @@ This is a CLI written in Go used for managing to-dos. This was created as practi
 `help` - Displays available commands
 
 `edit` - Typing "edit {id}" allows user to edit the description
+
+## Contribution
+
+If for any reason you would like to contribute to this project, make a pull request.
