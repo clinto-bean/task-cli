@@ -13,6 +13,7 @@ type Task struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// Create a Task struct and attempt to add it to the database
 func (api *API) CreateTask(desc string) {
 	task := Task{
 		Description: desc,
@@ -25,6 +26,7 @@ func (api *API) CreateTask(desc string) {
 	api.log.Info(fmt.Sprintf("Task created: %v", t.ID))
 }
 
+// Edit the specified task by changing its desc to match the desc passed
 func (api *API) EditTask(id int, desc string) {
 	err := api.db.EditTask(id, desc)
 	if err != nil {
@@ -33,6 +35,7 @@ func (api *API) EditTask(id int, desc string) {
 	api.log.Info(fmt.Sprintf("Task %d description updated: %s", id, desc))
 }
 
+// Attempts to get and print all tasks
 func (api *API) GetAllTasks() {
 	tasks, err := api.db.GetAllTasks()
 	if err != nil {
@@ -45,6 +48,7 @@ func (api *API) GetAllTasks() {
 	}
 }
 
+// Using the id, searches for a specific task
 func (api *API) GetTask(id int) {
 	task, err := api.db.GetTask(id)
 	if err != nil {
@@ -55,6 +59,7 @@ func (api *API) GetTask(id int) {
 	api.log.Printf("Task: %v\n", task.Description)
 }
 
+// Attempts to mark a specified task as complete
 func (api *API) CompleteTask(id int) {
 	err := api.db.CompleteTask(id)
 	if err != nil {
@@ -64,6 +69,7 @@ func (api *API) CompleteTask(id int) {
 	api.log.Info(fmt.Sprintf("Task %d marked as complete", id))
 }
 
+// Attempts to delete a specified task
 func (api *API) DeleteTask(id int) {
 	err := api.db.DeleteTask(id)
 	if err != nil {
@@ -73,6 +79,7 @@ func (api *API) DeleteTask(id int) {
 	api.log.Info(fmt.Sprintf("Task %d successfully deleted", id))
 }
 
+// Locates and prints all tasks where Status == Complete
 func (api *API) ShowCompletedTasks() {
 	tasks, err := api.db.GetCompletedTasks()
 	if err != nil {
@@ -91,6 +98,7 @@ func (api *API) ShowCompletedTasks() {
 	}
 }
 
+// Locates and prints all tasks where Status != Complete
 func (api *API) ShowIncompleteTasks() {
 	tasks, err := api.db.GetIncompleteTasks()
 	if err != nil {
@@ -110,6 +118,7 @@ func (api *API) ShowIncompleteTasks() {
 	}
 }
 
+// Locates and prints all tasks where Status == In Progress
 func (api *API) ShowStartedTasks() {
 	tasks, err := api.db.GetIncompleteTasks()
 	if err != nil {
@@ -129,6 +138,7 @@ func (api *API) ShowStartedTasks() {
 	}
 }
 
+// Marks a task as not started/incomplete
 func (api *API) UndoTask(id int) {
 	err := api.db.IncompleteTask(id)
 	if err != nil {
@@ -138,6 +148,7 @@ func (api *API) UndoTask(id int) {
 	api.log.Info(fmt.Sprintf("Task %d successfully marked as NOT complete.", id))
 }
 
+// Marks a task as in progress
 func (api *API) StartTask(id int) {
 	err := api.db.StartTask(id)
 	if err.Error() == "already complete" {

@@ -9,22 +9,27 @@ import (
 )
 
 func main() {
+	// Upon startup the program clears the command-line to reduce noise
 	clear := exec.Command("clear")
 	clear.Stdout = os.Stdout
 	clear.Run()
+	// Create logger structure for use within program
 	log := &Slogger{}
+	// Watch for ^C and handle it gracefully
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT)
-	log.Println("")
-	log.Announce("Task CLI starting.")
+	log.Announce("\nTask CLI starting.")
 	log.Info("Connecting to database.")
+	// Attempt to establish DB connection
 	db, err := NewDB("./db.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Announce("Database connected successfully.")
 	log.Info("Type HELP for a list of commands.")
+	// Create API
 	a := API{db: db, log: log}
+	// Handle any ^C call
 	go func() {
 		for range sig {
 			fmt.Println()
@@ -32,5 +37,6 @@ func main() {
 			a.CommandExit()
 		}
 	}()
-	log.Fatal(a.StartREPL())
+	// Start the program loop
+	a.StartREPL()
 }

@@ -19,6 +19,7 @@ type DBStruct struct {
 	Tasks []Task `json:"tasks"`
 }
 
+// Allocates a logger for the DB and calls ensureDB(), returning the DB and any error values
 func NewDB(path string) (*DB, error) {
 	log := &Slogger{}
 	db := &DB{
@@ -30,6 +31,7 @@ func NewDB(path string) (*DB, error) {
 	return db, err
 }
 
+// Initializes the json DB file if it does not exist, returning errors if the call to writeDB fails
 func (db *DB) createDB() error {
 	db.log.Info("Creating DB.")
 	dbStructure := DBStruct{
@@ -43,6 +45,7 @@ func (db *DB) createDB() error {
 	return err
 }
 
+// Ensures the json DB file exists and if it does not, attempts to create it, returning any errors it encounters
 func (db *DB) ensureDB() error {
 	data, err := os.ReadFile(db.path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -55,6 +58,7 @@ func (db *DB) ensureDB() error {
 	return err
 }
 
+// Attempts to read the file at the filepath for the DB, converts it to go struct and returns it as well as any error encountered
 func (db *DB) loadDB() (DBStruct, error) {
 	dbStructure := DBStruct{}
 	db.mu.RLock()
@@ -76,6 +80,7 @@ func (db *DB) loadDB() (DBStruct, error) {
 	return dbStructure, nil
 }
 
+// Takes in a DBStruct struct and attempts to call writeDB with it, returning any errors that it may encounter
 func (db *DB) writeDB(dbStructure DBStruct) error {
 
 	dat, err := json.Marshal(dbStructure)
@@ -90,6 +95,7 @@ func (db *DB) writeDB(dbStructure DBStruct) error {
 	return nil
 }
 
+// Receives a task object and attempts to write it to the database, returning the database's task entry as well as any errors encountered
 func (db *DB) AddTask(task Task) (Task, error) {
 	dbStruct, err := db.loadDB()
 	now := time.Now()
@@ -99,7 +105,7 @@ func (db *DB) AddTask(task Task) (Task, error) {
 	}
 
 	var idx int = 0
-
+	// Iterating over the dbStruct.Tasks to ensure proper indexing even if a task is removed
 	for _, ts := range dbStruct.Tasks {
 		if ts.ID > idx {
 			idx = ts.ID
@@ -123,6 +129,7 @@ func (db *DB) AddTask(task Task) (Task, error) {
 	return task, err
 }
 
+// Attempts to load the DB and then returns all task data
 func (db *DB) GetAllTasks() ([]Task, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
@@ -132,6 +139,7 @@ func (db *DB) GetAllTasks() ([]Task, error) {
 	return dbStruct.Tasks, nil
 }
 
+// Attempts to locate and return a specific task as well as any errors encountered
 func (db *DB) GetTask(id int) (Task, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
@@ -144,6 +152,7 @@ func (db *DB) GetTask(id int) (Task, error) {
 	return dbStruct.Tasks[i], nil
 }
 
+// Marks a task as complete and returns any errors encountered
 func (db *DB) CompleteTask(id int) error {
 	now := time.Now()
 	dbStruct, err := db.loadDB()
@@ -163,6 +172,7 @@ func (db *DB) CompleteTask(id int) error {
 	return err
 }
 
+// Marks a task as in progress and returns any errors encountered
 func (db *DB) StartTask(id int) error {
 	now := time.Now()
 	dbStruct, err := db.loadDB()
@@ -185,6 +195,7 @@ func (db *DB) StartTask(id int) error {
 	return err
 }
 
+// Locates a task by .ID property and deletes it, returning any encountered errors
 func (db *DB) DeleteTask(id int) error {
 	dbStruct, err := db.loadDB()
 	if err != nil {
@@ -199,6 +210,7 @@ func (db *DB) DeleteTask(id int) error {
 	return err
 }
 
+// Locates the task based on its .ID property and edits its description, returning any errors if encountered
 func (db *DB) EditTask(id int, desc string) error {
 	now := time.Now()
 	dbStruct, err := db.loadDB()
@@ -219,6 +231,7 @@ func (db *DB) EditTask(id int, desc string) error {
 
 }
 
+// Returns any task where Status is Complete and also returns any error encountered
 func (db *DB) GetCompletedTasks() ([]Task, error) {
 	var tasks []Task
 	dbStruct, err := db.loadDB()
@@ -233,6 +246,7 @@ func (db *DB) GetCompletedTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+// Returns all tasks where Status is not Complete and any errors encountered
 func (db *DB) GetIncompleteTasks() ([]Task, error) {
 	var tasks []Task
 	dbStruct, err := db.loadDB()
@@ -247,6 +261,7 @@ func (db *DB) GetIncompleteTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+// Marks a task as not started/incomplete via the undo command and returns an error if one occurs
 func (db *DB) IncompleteTask(id int) error {
 	now := time.Now()
 	dbStruct, err := db.loadDB()
@@ -263,6 +278,7 @@ func (db *DB) IncompleteTask(id int) error {
 	return err
 }
 
+// Attempts to locate the task with a given ID, and will return its .ID property as well as any errors encountered
 func index(tasks []Task, id int) (int, error) {
 	for i, t := range tasks {
 		if t.ID == id {
@@ -272,6 +288,7 @@ func index(tasks []Task, id int) (int, error) {
 	return -1, errors.New("not found")
 }
 
+// Helper function to attempt to write to DB reducing the amount of code needed to be written. Takes in a DBStruct and returns error from writeDB
 func (db *DB) save(payload DBStruct) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()

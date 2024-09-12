@@ -14,8 +14,9 @@ type API struct {
 	log *Slogger
 }
 
+// The main REPL for the program, allows for input and evaluation of arguments
 func (api *API) StartREPL() error {
-
+	// define two commonly used errors
 	NaN := errors.New("enter a valid numeric ID")
 	BadArgs := errors.New("insufficient arguments for command. type \"help\" for info")
 	scanner := bufio.NewScanner(os.Stdin)
@@ -80,7 +81,7 @@ func (api *API) StartREPL() error {
 				api.CommandGet(id)
 
 			} else {
-				api.log.Warn("Incorrect format. Please type 'show (\"complete\", \"all\" or \"{taskID\"}). Type 'help' for more information.")
+				api.HandleError(BadArgs)
 			}
 		case "exit", "close", "quit":
 			api.CommandExit(nil)
@@ -93,7 +94,7 @@ func (api *API) StartREPL() error {
 			api.CommandStart(id)
 		case "complete":
 			if len(args) == 1 {
-				api.log.Warn("Incorrect format. Please type 'complete {id}' or 'help' for more information.")
+				api.HandleError(BadArgs)
 				continue
 			}
 			id, err := strconv.Atoi(args[1])
@@ -117,6 +118,7 @@ func (api *API) StartREPL() error {
 	}
 }
 
+// Checks if any flags are entered and parse all arguments
 func parseArgs(args []string) (string, []string) {
 	var words = make([]string, 0, len(args))
 	var flags = make([]string, 0, len(args))
@@ -131,6 +133,7 @@ func parseArgs(args []string) (string, []string) {
 	return msg, flags
 }
 
+// Logs out any errors and discriminates based on whether the error is fatal
 func (api *API) HandleError(err error) {
 	if strings.ToLower(err.Error()[0:4]) == "fatal" {
 		api.log.Fatal(err)
